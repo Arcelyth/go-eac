@@ -93,8 +93,8 @@ func (s *Scanner) NextWord() string {
 
 		lexeme += string(c)
 		cat := s.CharCat(c)
-		s.stack = append(s.stack, state)
 		state = transition[state][cat]
+		s.stack = append(s.stack, state)
 	}
 
 	for {
