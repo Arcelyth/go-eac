@@ -35,7 +35,7 @@ type MMScanner struct {
 	failed map[State]map[int]bool
 }
 
-func new_scanner(input string) MMScanner {
+func newScanner(input string) MMScanner {
 	failed := make(map[State]map[int]bool)
 	for _, st := range []State{S0, S1, S2, Se, Bad} {
 		failed[st] = make(map[int]bool)
@@ -149,7 +149,7 @@ func main() {
 	}
 
 	for _, t := range tests {
-		s := new_scanner(t)
+		s := newScanner(t)
 
 		token := s.NextWord()
 		fmt.Printf("%q => MATCH %q\n", t, token)

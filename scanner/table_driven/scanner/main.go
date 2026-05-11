@@ -28,7 +28,7 @@ type Scanner struct {
 	stack []State
 }
 
-func new_scanner(input string) Scanner {
+func newScanner(input string) Scanner {
 	return Scanner{
 		input: input,
 		pos:   0,
@@ -129,7 +129,7 @@ func main() {
 	}
 
 	for _, t := range tests {
-		s := new_scanner(t)
+		s := newScanner(t)
 
 		token := s.NextWord()
 		fmt.Printf("%q => MATCH %q\n", t, token)
