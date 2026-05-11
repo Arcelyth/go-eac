@@ -94,6 +94,7 @@ func (s *Scanner) NextWord() string {
 		lexeme += string(c)
 		cat := s.CharCat(c)
 		state = transition[state][cat]
+		s.stack = append(s.stack, state)
 	}
 
 	for {
@@ -103,8 +104,10 @@ func (s *Scanner) NextWord() string {
 		sl := len(s.stack)
 		state = s.stack[sl-1]
 		s.stack = s.stack[:sl-1]
-		lexeme = lexeme[:len(lexeme)-1]
-		s.Rollback()
+		if len(lexeme) > 0 {
+			lexeme = lexeme[:len(lexeme)-1]
+			s.Rollback()
+		}
 	}
 
 	if slices.Contains(accepts, state) {
