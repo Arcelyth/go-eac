@@ -1,3 +1,5 @@
+// maximal munch scanner,
+
 package main
 
 import (
@@ -22,20 +24,30 @@ const (
 	Other
 )
 
-type Scanner struct {
-	input string
+type Entry struct {
+	state State
 	pos   int
-	stack []State
 }
 
-func new_scanner(input string) Scanner {
-	return Scanner{
-		input: input,
-		pos:   0,
+type MMScanner struct {
+	input  string
+	pos    int
+	failed map[State]map[int]bool
+}
+
+func new_scanner(input string) MMScanner {
+	failed := make(map[State]map[int]bool)
+	for _, st := range []State{S0, S1, S2, Se, Bad} {
+		failed[st] = make(map[int]bool)
+	}
+	return MMScanner{
+		input:  input,
+		pos:    0,
+		failed: failed,
 	}
 }
 
-func (s *Scanner) CharCat(ch byte) charType {
+func (s *MMScanner) CharCat(ch byte) charType {
 	switch {
 	case ch == 'r':
 		return Register
@@ -46,7 +58,7 @@ func (s *Scanner) CharCat(ch byte) charType {
 	}
 }
 
-func (s *Scanner) NextChar() (byte, bool) {
+func (s *MMScanner) NextChar() (byte, bool) {
 	if s.pos >= len(s.input) {
 		return 0, false
 	}
@@ -55,7 +67,7 @@ func (s *Scanner) NextChar() (byte, bool) {
 	return ch, true
 }
 
-func (s *Scanner) Rollback() {
+func (s *MMScanner) Rollback() {
 	if s.pos > 0 {
 		s.pos--
 	}
@@ -65,7 +77,7 @@ var transition = map[State][]State{
 	S0: {S1, Se, Se},
 	S1: {Se, S2, Se},
 	S2: {Se, S2, Se},
-	Se: {Se, S2, Se},
+	Se: {Se, Se, Se},
 }
 
 var accepts = []State{S2}
@@ -77,33 +89,41 @@ var token_table = map[State]string{
 	Se: "invalid",
 }
 
-func (s *Scanner) NextWord() string {
+func (s *MMScanner) NextWord() string {
 	state := S0
 	lexeme := ""
-	s.stack = append(s.stack, Bad)
+	stack := []Entry{{Bad, -1}}
 	for {
 		if state == Se {
 			break
 		}
-
 		c, ok := s.NextChar()
 		if !ok {
 			break
 		}
 
+		if s.failed[state][s.pos] {
+			break
+		}
+
+		if slices.Contains(accepts, state) {
+			stack = []Entry{}
+		}
+
 		lexeme += string(c)
 		cat := s.CharCat(c)
+		stack = append(stack, Entry{state, s.pos})
 		state = transition[state][cat]
-		s.stack = append(s.stack, state)
 	}
 
 	for {
 		if slices.Contains(accepts, state) || state == Bad {
 			break
 		}
-		sl := len(s.stack)
-		state = s.stack[sl-1]
-		s.stack = s.stack[:sl-1]
+		s.failed[state][s.pos] = true
+		sl := len(stack)
+		state = stack[sl-1].state
+		stack = stack[:sl-1]
 		if len(lexeme) > 0 {
 			lexeme = lexeme[:len(lexeme)-1]
 			s.Rollback()
